@@ -17,6 +17,11 @@ mongoose.connect("mongodb+srv://lk:lk@cluster0.dnqk5.mongodb.net/test?retryWrite
   console.log("connected")
 }).catch((err) => { console.log(err) })
 
+let mydate = (date) => {
+  let d = new Date(date)
+  return d.toDateString()
+}
+
 const exerciseUserSchema = new mongoose.Schema({
   username: String,
   count: Number,
@@ -26,7 +31,7 @@ const exerciseUserSchema = new mongoose.Schema({
       duration: Number,
       date: {
         type: String,
-        default: new Date().toDateString()
+        default: mydate(new Date())
       }
     }
   ]
@@ -100,7 +105,7 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
           user.log.push({
             description: req.body.description,
             duration: req.body.duration,
-            date: req.body.date
+            date: mydate(req.body.date)
           })
           user.count = user.log.length
           user.save().then((response) => {
@@ -126,7 +131,7 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
         user.log.push({
           description: req.body.description,
           duration: req.body.duration,
-          date: new Date().toDateString()
+          date: mydate(new Date())
         })
         user.count = user.log.length
         user.save().then((response) => {
@@ -151,6 +156,11 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
 
 
 })
+
+
+
+
+
 app.get("/api/users/:_id/logs", async (req, res) => {
   if (req.params._id === null) {
     res.status(400).send("id required")
