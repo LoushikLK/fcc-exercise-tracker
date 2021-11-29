@@ -18,8 +18,11 @@ mongoose.connect("mongodb+srv://lk:lk@cluster0.dnqk5.mongodb.net/test?retryWrite
 }).catch((err) => { console.log(err) })
 
 let mydate = (date) => {
-  let d = new Date(date)
-  return d.toDateString()
+  if (date) {
+    return new Date(date).toDateString()
+  }
+  return new Date().toDateString()
+
 }
 
 const exerciseUserSchema = new mongoose.Schema({
@@ -96,6 +99,7 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
 
   try {
     if (req.body.date !== null) {
+      console.log(mydate(req.body.date))
       if (myregex.test(req.body.date)) {
         res.status(400).send("date format is not correct")
       }
@@ -125,13 +129,14 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
         }
       }
     }
-    else {
+    else if (req.body.date === null || req.body.date === "" || req.body.date === undefined) {
+      console.log(mydate())
       const user = await usermodel.findById(userid)
       if (user) {
         user.log.push({
           description: req.body.description,
           duration: req.body.duration,
-          date: mydate(new Date())
+          date: mydate()
         })
         user.count = user.log.length
         user.save().then((response) => {
@@ -192,7 +197,31 @@ app.get("/api/users/:_id/logs", async (req, res) => {
 
 })
 
-
+app.get("/api/users/:id/logs/:range", async (req, res) => {
+  if (req.params.id === null) {
+    res.status(400).send("id required")
+  }
+  try {
+    const user = await usermodel.findById(req.params.id)
+    if (user) {
+      let userdata = {
+        username: user.username,
+        _id: user._id,
+        count: user.count,
+        log: user.log.map(element => {
+          return {
+            description: element.description,
+            duration: element.duration,
+            date: element.date
+          }
+        })
+      }
+      res.send(userdata)
+    }
+  } catch (error) {
+    console.log(error)
+  }
+})
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
 })
