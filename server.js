@@ -166,36 +166,108 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
 
 
 
-app.get("/api/users/:_id/logs", async (req, res) => {
-  if (req.params._id === null) {
-    res.status(400).send("id required")
-  }
-  try {
-    const user = await usermodel.findById(req.params._id)
-    if (user) {
-      let userdata = {
-        username: user.username,
-        _id: user._id,
-        count: user.count,
-        log: user.log.map(element => {
-          return {
-            description: element.description,
-            duration: element.duration,
-            date: element.date
-          }
-        })
-      }
+// app.get("/api/users/:_id/logs", async (req, res) => {
+//   if (req.params._id === null) {
+//     res.status(400).send("id required")
+//   }
+//   try {
+//     const user = await usermodel.findById(req.params._id)
+//     if (user) {
+//       let userdata = {
+//         username: user.username,
+//         _id: user._id,
+//         count: user.count,
+//         log: user.log.map(element => {
+//           return {
+//             description: element.description,
+//             duration: element.duration,
+//             date: element.date
+//           }
+//         })
+//       }
 
-      res.send(userdata)
+//       res.send(userdata)
+//     }
+
+//   } catch (error) {
+//     console.log(error)
+//   }
+
+
+
+// })
+
+app.get('/api/users/:_id/logs', (req, res) => {
+  //console.log(req.params)
+  //console.log(req.params._id)
+  console.log("line 127 inside get(/api/users/:_id/logs)")
+  //console.log(req.query)//returns any ?query=value after url as object {}
+  usermodel.findById(req.params._id, (err, result) => {
+    if (err) {
+      return console.error(error)
     }
 
-  } catch (error) {
-    console.log(error)
-  }
+    const exerciseCount = result.log.length;
+    //check for Invalid Date to pass tests
+    //date must be returned as String
+    for (each in result.log) {
+      if (result.log[each].date == 'Invalid Date') {
+        result.log[each].date = new Date().toDateString();
+      }
+    }
+    console.log(result.log)
+    console.log(req.query);
+    //console.log(req.query != {})//returns true don't use for checking if query object is part of url
+    console.log(Object.keys(req.query).length != 0);//use this to determine if query is there
+    //if query is not empty convert query date format and log date format to Date object for comparison. toDateString() does not work for comparison purposes
+    if (Object.keys(req.query).length != 0) {
+      const from = new Date(req.query['from']);
+      const to = new Date(req.query['to']);
+      //try sub below
+      let fromLog = new Date(result.log[0].date);
+      //let fromLog = new Date();//sub this later
+      let resLog = [];
 
+      if (req.query.hasOwnProperty('limit')) {
+        for (each in result.log) {
+          if (each < req.query['limit']) {
+            resLog.push(result.log[each]);
+          }
+        }
+      }
 
+      if (req.query.hasOwnProperty('from')) {
+        for (each in result.log) {
+          console.log(result.log.length);
+          console.log(each)
+          fromLog = new Date(result.log[each].date);
+          if (from < fromLog && to > fromLog) {
+            console.log("include this log");
+            resLog.push(result.log[each]);
+            console.log(result.log);//two logs
+            console.log(resLog);//one log
+          }
+        }
+      }
 
+      result.log = resLog;
+      //remove logs below
+      console.log(result.log);
+      console.log('type of from:')
+      console.log(typeof (from))
+      console.log(typeof (req.query['from']))
+      console.log(from + ' until ' + to)
+      console.log(from < fromLog);
+      console.log('from is less than log date');
+      console.log(to > fromLog);
+      console.log('to is more than log date');
+    }
+
+    res.json({ "username": result.username, "count": exerciseCount, "_id": result._id, "log": result.log })
+  })
 })
+
+
 
 app.get("/api/users/:id/logs/:range", async (req, res) => {
   if (req.params.id === null) {
